@@ -683,7 +683,6 @@ std::ostream& operator<<(std::ostream& os, const Token& token) {
     os << "{Type: " << token.type << ", Value: " << token.value << "}";
     return os;
 }
-
 class AssemblerGenerator : public AstVisitor {
 public:
     void visit(Expression* node) override {
@@ -773,7 +772,6 @@ public:
 
     void visit(ReturnStatement* node) override {
         node->expression->accept(this);
-        // The function epilogue and ret instruction are handled in FunctionDeclaration
     }
 
     void visit(VariableDeclaration* node) override {
@@ -783,7 +781,6 @@ public:
         }
     }
 };
-
 
 class AstPrinter : public AstVisitor {
 public:
