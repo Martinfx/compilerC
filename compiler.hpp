@@ -691,28 +691,27 @@ public:
     }
 
     void visit(Identifier* node) override {
-        // For simplicity, we assume identifiers are already loaded into registers
-        std::cout << "        mov     eax, [" << node->name << "]" << std::endl;
+        std::cout << "        mov     %eax, [" << node->name << "]" << std::endl;
     }
 
     void visit(Literal* node) override {
-        std::cout << "        mov     eax, " << node->value << std::endl;
+        std::cout << "        mov     $" << node->value << ", %eax" << std::endl;
     }
 
     void visit(BinaryOperation* node) override {
         node->left->accept(this);
-        std::cout << "        push    rax" << std::endl;
+        std::cout << "        push    %rax" << std::endl;
         node->right->accept(this);
-        std::cout << "        pop     rbx" << std::endl;
+        std::cout << "        pop     %rbx" << std::endl;
         if (node->op.value == "+") {
-            std::cout << "        add     eax, ebx" << std::endl;
+            std::cout << "        add     %eax, %ebx" << std::endl;
         } else if (node->op.value == "-") {
-            std::cout << "        sub     eax, ebx" << std::endl;
+            std::cout << "        sub     %eax, %ebx" << std::endl;
         } else if (node->op.value == "*") {
-            std::cout << "        imul    eax, ebx" << std::endl;
+            std::cout << "        imul    %eax, %ebx" << std::endl;
         } else if (node->op.value == "/") {
             std::cout << "        cdq" << std::endl; // Sign extend EAX into EDX:EAX
-            std::cout << "        idiv    ebx" << std::endl;
+            std::cout << "        idiv    %ebx" << std::endl;
         }
     }
 
@@ -728,7 +727,7 @@ public:
 
     void visit(IfStatement* node) override {
         node->condition->accept(this);
-        std::cout << "        cmp     eax, 0" << std::endl;
+        std::cout << "        cmp     %eax, 0" << std::endl;
         std::cout << "        je      else_label" << std::endl;
         node->thenStatement->accept(this);
         std::cout << "        jmp     endif_label" << std::endl;
@@ -742,7 +741,7 @@ public:
     void visit(WhileStatement* node) override {
         std::cout << "while_label:" << std::endl;
         node->condition->accept(this);
-        std::cout << "        cmp     eax, 0" << std::endl;
+        std::cout << "        cmp     %eax, 0" << std::endl;
         std::cout << "        je      endwhile_label" << std::endl;
         node->body->accept(this);
         std::cout << "        jmp     while_label" << std::endl;
@@ -753,7 +752,7 @@ public:
         node->init->accept(this);
         std::cout << "for_label:" << std::endl;
         node->condition->accept(this);
-        std::cout << "        cmp     eax, 0" << std::endl;
+        std::cout << "        cmp     %eax, 0" << std::endl;
         std::cout << "        je      endfor_label" << std::endl;
         node->body->accept(this);
         node->update->accept(this);
@@ -777,10 +776,11 @@ public:
     void visit(VariableDeclaration* node) override {
         if (node->init) {
             node->init->accept(this);
-            std::cout << "        mov     [" << node->name << "], eax" << std::endl;
+            std::cout << "        mov     [" << node->name << "], %eax" << std::endl;
         }
     }
 };
+
 
 class AstPrinter : public AstVisitor {
 public:

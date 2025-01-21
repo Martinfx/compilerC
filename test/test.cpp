@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "../compiler.hpp"
 
+// Funkce pro odstranění mezer a tabulátorů z řetězce
 std::string remove_whitespace(const std::string& str) {
     std::string result;
     std::copy_if(str.begin(), str.end(), std::back_inserter(result), [](char c) {
@@ -33,12 +34,12 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForSimpleFunction) {
     std::cout.rdbuf(oldCoutBuffer);
 
     std::string expectedOutput =
-                                 "        .globl  main\n"
-                                 "        .type   main, @function\n"
-                                 "main:\n"
-                                 "        mov     eax, 0\n"
-                                 "        ret\n"
-                                 "        .size   main, .-main\n";
+        "        .globl  main\n"
+        "        .type   main, @function\n"
+        "main:\n"
+        "        mov     $0, %eax\n"
+        "        ret\n"
+        "        .size   main, .-main\n";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
@@ -68,13 +69,12 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForSimpleFunction2) {
     std::cout.rdbuf(oldCoutBuffer);
 
     std::string expectedOutput =
-                                 "        .globl  main\n"
-                                 "        .type   main, @function\n"
-                                 "main:\n"
-                                 "        mov     eax, 0\n"
-                                 "        ret\n"
-                                 "        .size   main, .-main\n";
-
+        "        .globl  main\n"
+        "        .type   main, @function\n"
+        "main:\n"
+        "        mov     $0, %eax\n"
+        "        ret\n"
+        "        .size   main, .-main\n";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
@@ -92,30 +92,27 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForSimpleFunction3) {
         {TokenType::CLOSEBRACE, "}"}
     };
 
-
     Parser parser(tokens);
     auto ast = parser.parse();
     AssemblerGenerator generator;
     std::ostringstream output;
-    std::streambuf* oldCoutBuffer = std::cout.rdbuf(output.rdbuf()); // Přesměrování std::cout do ostringstream
+    std::streambuf* oldCoutBuffer = std::cout.rdbuf(output.rdbuf());
 
     ast->accept(&generator);
 
-    std::cout.rdbuf(oldCoutBuffer); // Obnovení std::cout
+    std::cout.rdbuf(oldCoutBuffer);
 
-    // Očekávaný výstup assembleru
     std::string expectedOutput =
-                                 "        .globl  main\n"
-                                 "        .type   main, @function\n"
-                                 "main:\n"
-                                 "        mov     eax, 0\n"
-                                 "        ret\n"
-                                 "        .size   main, .-main\n";
+        "        .globl  main\n"
+        "        .type   main, @function\n"
+        "main:\n"
+        "        mov     $0, %eax\n"
+        "        ret\n"
+        "        .size   main, .-main\n";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
 
-// Test pro generování assembleru pro funkci s více instrukcemi
 TEST(AssemblerTest, GeneratesCorrectAssemblerForFunctionWithMultipleStatements4) {
     std::vector<Token> tokens = {
         {TokenType::KEYWORD, "int"},
@@ -141,34 +138,32 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForFunctionWithMultipleStatements4)
         {TokenType::CLOSEBRACE, "}"}
     };
 
-
     Parser parser(tokens);
     auto ast = parser.parse();
     AssemblerGenerator generator;
     std::ostringstream output;
-    std::streambuf* oldCoutBuffer = std::cout.rdbuf(output.rdbuf()); // Přesměrování std::cout do ostringstream
+    std::streambuf* oldCoutBuffer = std::cout.rdbuf(output.rdbuf());
 
     ast->accept(&generator);
 
-    std::cout.rdbuf(oldCoutBuffer); // Obnovení std::cout
+    std::cout.rdbuf(oldCoutBuffer);
 
-    // Očekávaný výstup assembleru
     std::string expectedOutput =
-                                 "        .globl  main\n"
-                                 "        .type   main, @function\n"
-                                 "main:\n"
-                                 "        mov     eax, 5\n"
-                                 "        mov     [a], eax\n"
-                                 "        mov     eax, 10\n"
-                                 "        mov     [b], eax\n"
-                                 "        mov     eax, [a]\n"
-                                 "        add     eax, [b]\n"
-                                 "        ret\n"
-                                 "        .size   main, .-main\n";
+        "        .globl  main\n"
+        "        .type   main, @function\n"
+        "main:\n"
+        "        mov     $5, %eax\n"
+        "        mov     %eax, [a]\n"
+        "        mov     $10, %eax\n"
+        "        mov     %eax, [b]\n"
+        "        mov     %eax, [a]\n"
+        "        add     %eax, [b]\n"
+        "        ret\n"
+        "        .size   main, .-main\n";
+
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
 
-// Test pro generování assembleru pro podmíněný příkaz
 TEST(AssemblerTest, GeneratesCorrectAssemblerForConditionalStatement5) {
     std::vector<Token> tokens = {
         {TokenType::KEYWORD, "int"},
@@ -198,33 +193,31 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForConditionalStatement5) {
         {TokenType::CLOSEBRACE, "}"}
     };
 
-
     Parser parser(tokens);
     auto ast = parser.parse();
     AssemblerGenerator generator;
     std::ostringstream output;
-    std::streambuf* oldCoutBuffer = std::cout.rdbuf(output.rdbuf()); // Přesměrování std::cout do ostringstream
+    std::streambuf* oldCoutBuffer = std::cout.rdbuf(output.rdbuf());
 
     ast->accept(&generator);
 
-    std::cout.rdbuf(oldCoutBuffer); // Obnovení std::cout
+    std::cout.rdbuf(oldCoutBuffer);
 
-    // Očekávaný výstup assembleru
     std::string expectedOutput =
-                                 "        .globl  main\n"
-                                 "        .type   main, @function\n"
-                                 "main:\n"
-                                 "        mov     eax, 5\n"
-                                 "        mov     [a], eax\n"
-                                 "        mov     eax, [a]\n"
-                                 "        cmp     eax, 0\n"
-                                 "        jle     else_label\n"
-                                 "        mov     eax, 1\n"
-                                 "        ret\n"
-                                 "else_label:\n"
-                                 "        mov     eax, 0\n"
-                                 "        ret\n"
-                                 "        .size   main, .-main\n";
+        "        .globl  main\n"
+        "        .type   main, @function\n"
+        "main:\n"
+        "        mov     $5, %eax\n"
+        "        mov     %eax, [a]\n"
+        "        mov     %eax, [a]\n"
+        "        cmp     %eax, 0\n"
+        "        jle     else_label\n"
+        "        mov     $1, %eax\n"
+        "        ret\n"
+        "else_label:\n"
+        "        mov     $0, %eax\n"
+        "        ret\n"
+        "        .size   main, .-main\n";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
