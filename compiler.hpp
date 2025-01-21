@@ -763,14 +763,17 @@ public:
     }
 
     void visit(FunctionDeclaration* node) override {
-        std::cout << "main:" << std::endl;
+        std::cout << "        .globl  " << node->name << std::endl;
+        std::cout << "        .type   " << node->name << ", @function" << std::endl;
+        std::cout << node->name << ":" << std::endl;
         node->body->accept(this);
         std::cout << "        ret" << std::endl;
+        std::cout << "        .size   " << node->name << ", .-" << node->name << std::endl;
     }
 
     void visit(ReturnStatement* node) override {
         node->expression->accept(this);
-        std::cout << "        ret" << std::endl;
+        // The function epilogue and ret instruction are handled in FunctionDeclaration
     }
 
     void visit(VariableDeclaration* node) override {
@@ -780,6 +783,7 @@ public:
         }
     }
 };
+
 
 class AstPrinter : public AstVisitor {
 public:

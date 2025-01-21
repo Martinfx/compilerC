@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     };
 
     //std::string sourceCode = readFile(filename);
-    std::string sourceCode = "int main() { int x = 4+4 return x;}";
+    std::string sourceCode = "int main() {  return 0;}";
     sourceCode = removeComments(sourceCode);
 
     try {
