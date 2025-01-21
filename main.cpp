@@ -548,7 +548,7 @@ private:
 
         auto body = std::make_shared<BlockStatement>();
         while (!match(TokenType::CLOSEBRACE)) {
-                body->statements.push_back(parseStatement());
+            body->statements.push_back(parseStatement());
         }
 
         return std::make_shared<FunctionDeclaration>(
@@ -690,27 +690,28 @@ public:
     }
 
     void visit(Identifier* node) override {
-        std::cout << "mov rax, [" << node->name << "]" << std::endl;
+        // For simplicity, we assume identifiers are already loaded into registers
+        std::cout << "        mov     eax, [" << node->name << "]" << std::endl;
     }
 
     void visit(Literal* node) override {
-        std::cout << "mov rax, " << node->value << std::endl;
+        std::cout << "        mov     eax, " << node->value << std::endl;
     }
 
     void visit(BinaryOperation* node) override {
         node->left->accept(this);
-        std::cout << "push rax" << std::endl;
+        std::cout << "        push    rax" << std::endl;
         node->right->accept(this);
-        std::cout << "pop rbx" << std::endl;
+        std::cout << "        pop     rbx" << std::endl;
         if (node->op.value == "+") {
-            std::cout << "add rax, rbx" << std::endl;
+            std::cout << "        add     eax, ebx" << std::endl;
         } else if (node->op.value == "-") {
-            std::cout << "sub rax, rbx" << std::endl;
+            std::cout << "        sub     eax, ebx" << std::endl;
         } else if (node->op.value == "*") {
-            std::cout << "imul rax, rbx" << std::endl;
+            std::cout << "        imul    eax, ebx" << std::endl;
         } else if (node->op.value == "/") {
-            std::cout << "cqo" << std::endl; // Sign extend RAX into RDX:RAX
-            std::cout << "idiv rbx" << std::endl;
+            std::cout << "        cdq" << std::endl; // Sign extend EAX into EDX:EAX
+            std::cout << "        idiv    ebx" << std::endl;
         }
     }
 
@@ -726,10 +727,10 @@ public:
 
     void visit(IfStatement* node) override {
         node->condition->accept(this);
-        std::cout << "cmp rax, 0" << std::endl;
-        std::cout << "je else_label" << std::endl;
+        std::cout << "        cmp     eax, 0" << std::endl;
+        std::cout << "        je      else_label" << std::endl;
         node->thenStatement->accept(this);
-        std::cout << "jmp endif_label" << std::endl;
+        std::cout << "        jmp     endif_label" << std::endl;
         std::cout << "else_label:" << std::endl;
         if (node->elseStatement) {
             node->elseStatement->accept(this);
@@ -740,10 +741,10 @@ public:
     void visit(WhileStatement* node) override {
         std::cout << "while_label:" << std::endl;
         node->condition->accept(this);
-        std::cout << "cmp rax, 0" << std::endl;
-        std::cout << "je endwhile_label" << std::endl;
+        std::cout << "        cmp     eax, 0" << std::endl;
+        std::cout << "        je      endwhile_label" << std::endl;
         node->body->accept(this);
-        std::cout << "jmp while_label" << std::endl;
+        std::cout << "        jmp     while_label" << std::endl;
         std::cout << "endwhile_label:" << std::endl;
     }
 
@@ -751,32 +752,29 @@ public:
         node->init->accept(this);
         std::cout << "for_label:" << std::endl;
         node->condition->accept(this);
-        std::cout << "cmp rax, 0" << std::endl;
-        std::cout << "je endfor_label" << std::endl;
+        std::cout << "        cmp     eax, 0" << std::endl;
+        std::cout << "        je      endfor_label" << std::endl;
         node->body->accept(this);
         node->update->accept(this);
-        std::cout << "jmp for_label" << std::endl;
+        std::cout << "        jmp     for_label" << std::endl;
         std::cout << "endfor_label:" << std::endl;
     }
 
     void visit(FunctionDeclaration* node) override {
-        std::cout << node->name << ":" << std::endl;
-        std::cout << "push rbp" << std::endl;
-        std::cout << "mov rbp, rsp" << std::endl;
+        std::cout << "main:" << std::endl;
         node->body->accept(this);
-        std::cout << "pop rbp" << std::endl;
-        std::cout << "ret" << std::endl;
+        std::cout << "        ret" << std::endl;
     }
 
     void visit(ReturnStatement* node) override {
         node->expression->accept(this);
-        std::cout << "ret" << std::endl;
+        std::cout << "        ret" << std::endl;
     }
 
     void visit(VariableDeclaration* node) override {
         if (node->init) {
             node->init->accept(this);
-            std::cout << "mov [" << node->name << "], rax" << std::endl;
+            std::cout << "        mov     [" << node->name << "], eax" << std::endl;
         }
     }
 };
@@ -884,7 +882,7 @@ int main(int argc, char* argv[]) {
     };
 
     //std::string sourceCode = readFile(filename);
-    std::string sourceCode = "int main() { int x = 4 + 4; return x;}";
+    std::string sourceCode = "int main() { int x = 4+4 return x;}";
     sourceCode = removeComments(sourceCode);
 
     try {
@@ -911,7 +909,7 @@ int main(int argc, char* argv[]) {
         ast->accept(&generator);
 
         // End assembler output
-        std::cout << ".ident  \"GCC: (FreeBSD Ports Collection) 13.3.0\"" << std::endl;
+        std::cout << ".ident  \"CompilerC: 0.1\"" << std::endl;
         std::cout << ".section        .note.GNU-stack,\"\",@progbits" << std::endl;
 
     } catch (const std::exception& e) {
