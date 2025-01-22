@@ -1,13 +1,19 @@
 #include <iostream>
 #include <string>
-#include <vector>
-#include <regex>
 #include <cctype>
-#include <fstream>
-#include <cassert>
 
 #include "compiler.hpp"
+#include "lexer.hpp"
 
+std::string readFile(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        throw std::runtime_error("Could not open file: " + filename);
+    }
+
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return content;
+}
 
 int main(int argc, char* argv[]) {
     /*if (argc != 2) {
@@ -20,20 +26,6 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error: Input file must have a .c extension\n";
         return 1;
     }*/
-
-    std::vector<std::pair<TokenType, std::regex>> tokenTable = {
-        {TokenType::KEYWORD, std::regex("^void\\b|int\\b|return\\b")},
-        {TokenType::LITERAL, std::regex("^\\d+")},
-        {TokenType::IDENTIFIER, std::regex("^[a-zA-Z_][a-zA-Z0-9_]*")},
-        {TokenType::OPERATOR, std::regex("^\\+|\\-|\\*|\\/|\\=")},
-        {TokenType::WHITESPACE, std::regex("^\\s+")},
-        {TokenType::OPENPARENTHESIS, std::regex("^\\(")},
-        {TokenType::CLOSEPARENTHESIS, std::regex("^\\)")},
-        {TokenType::OPENBRACE, std::regex("^\\{")},
-        {TokenType::CLOSEBRACE, std::regex("^\\}")},
-        {TokenType::SEMICOLON, std::regex("^\\;")},
-        {TokenType::COMMA, std::regex("^,")}
-    };
 
     //std::string sourceCode = readFile(filename);
     std::string sourceCode = "int main() {  return 0;}";
