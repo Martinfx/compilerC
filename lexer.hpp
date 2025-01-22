@@ -27,10 +27,6 @@ void trimWhitespace(std::string& input) {
     input.erase(0, input.find_first_not_of(" \t\r"));
 }
 
-void trimAt(std::string& input) {
-    input.erase(0, input.find_first_not_of("@"));
-}
-
 std::string removeComments(const std::string& input) {
     static const std::regex singleLineComment("//.*");
     static const std::regex multiLineComment("/\\*.*?\\*/");
@@ -43,7 +39,7 @@ std::string removeComments(const std::string& input) {
 std::vector<Token> tokenize(const std::string& input, const std::vector<std::pair<TokenType, std::regex>>& tokenTable) {
     std::string remainingInput = input;
     std::vector<Token> tokens;
-
+    std::vector<char> bracketStack;
     int lineCount = 1;
 
     while (!remainingInput.empty()) {
@@ -83,6 +79,27 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
             std::smatch match;
             if (std::regex_search(remainingInput, match, regex) && match.position() == 0) {
                 tokens.push_back({type, match.str()});
+
+                char currentChar = match.str()[0];
+                if (currentChar == '(' || currentChar == '{' || currentChar == '[') {
+                    bracketStack.push_back(currentChar);
+                } else if (currentChar == ')' || currentChar == '}' || currentChar == ']') {
+                    if (bracketStack.empty()) {
+                        std::string str(1, currentChar);
+                        throw std::runtime_error("Unmatched closing bracket "  + str +
+                                                                                       + " at line " +  std::to_string(lineCount));
+                        break;
+                    }
+                    char lastBracket = bracketStack.back();
+                    if ((currentChar == ')' && lastBracket != '(') ||
+                        (currentChar == '}' && lastBracket != '{') ||
+                        (currentChar == ']' && lastBracket != '[')) {
+                        throw std::runtime_error("Mismatched brackets at line " + std::to_string(lineCount));
+                        break;
+                    }
+                    bracketStack.pop_back();
+                }
+
                 remainingInput = remainingInput.substr(match.length());
                 matched = true;
                 break;
@@ -94,8 +111,14 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
             break;
         }
     }
+
+    if (!bracketStack.empty()) {
+        throw std::runtime_error("Unmatched opening brackets found. Ensure all brackets are closed. Line: " + std::to_string(lineCount));
+    }
+
     return tokens;
 }
+
 
 std::ostream& operator<<(std::ostream& os, const NodeType& type) {
     switch (type) {
