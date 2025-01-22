@@ -53,7 +53,9 @@ enum class TokenType
     SEMICOLON,
     COMMA,
     EQUAL,
-    UNKNOWN
+    UNKNOWN,
+    SIGNGLECOMMENT,
+    NEWLINE
 };
 
 

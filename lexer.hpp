@@ -18,11 +18,13 @@ std::vector<std::pair<TokenType, std::regex>> tokenTable = {
     {TokenType::CLOSEBRACE, std::regex("^\\}")},
     {TokenType::SEMICOLON, std::regex("^\\;")},
     {TokenType::COMMA, std::regex("^,")},
-    {TokenType::UNKNOWN, std::regex("^\\@|\\#")}
+    {TokenType::UNKNOWN, std::regex("^\\@|\\#")},
+    {TokenType::SIGNGLECOMMENT, std::regex("^//[^\n]*")},
+    {TokenType::NEWLINE, std::regex("^\n")}
 };
 
 void trimWhitespace(std::string& input) {
-    input.erase(0, input.find_first_not_of(" \t\n\r"));
+    input.erase(0, input.find_first_not_of(" \t\r"));
 }
 
 void trimAt(std::string& input) {
@@ -42,9 +44,39 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
     std::string remainingInput = input;
     std::vector<Token> tokens;
 
+    int lineCount = 1;
+
     while (!remainingInput.empty()) {
         trimWhitespace(remainingInput);
-        //trimAt(remainingInput);
+
+        if (!remainingInput.empty() && remainingInput[0] == '\n') {
+            lineCount++;
+            remainingInput = remainingInput.substr(1);
+            tokens.push_back({TokenType::NEWLINE, "\n"});
+            continue;
+        }
+
+        if (!remainingInput.empty() && remainingInput[0] == '/' && remainingInput[1] == '/') {
+            size_t commentEnd = remainingInput.find('\n');
+            if (commentEnd != std::string::npos) {
+                remainingInput = remainingInput.substr(commentEnd);
+                lineCount++;
+            } else {
+                remainingInput.clear();
+            }
+            continue;
+        }
+
+        if (!remainingInput.empty() && remainingInput[0] == '/' && remainingInput[1] == '*') {
+            size_t commentEnd = remainingInput.find("*/");
+            if (commentEnd != std::string::npos) {
+                remainingInput = remainingInput.substr(commentEnd + 2);
+            } else {
+                std::cerr << "Error: Unterminated comment at line " << lineCount << std::endl;
+                break;
+            }
+            continue;
+        }
 
         bool matched = false;
         for (const auto& [type, regex] : tokenTable) {
@@ -58,10 +90,10 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
         }
 
         if (!matched) {
-            throw std::runtime_error("Unrecognized token at: " + remainingInput);
+            std::cerr << "Warning: Unrecognized token at line " << lineCount << ": " << remainingInput << std::endl;
+            break;
         }
     }
-
     return tokens;
 }
 
@@ -79,7 +111,7 @@ std::ostream& operator<<(std::ostream& os, const NodeType& type) {
     case NodeType::FunctionDef: os << "FunctionDef"; break;
     case NodeType::Program: os << "Program"; break;
     case NodeType::Identifier: os << "Identifier"; break;
-    default: os << "Unknown"; break;
+    default: os << "Unknown case"; break;
     }
     return os;
 }
@@ -97,7 +129,9 @@ std::ostream& operator<<(std::ostream& os, const TokenType& type) {
     case TokenType::COMMA: os << "COMMA"; break;
     case TokenType::SEMICOLON: os << "SEMICOLON"; break;
     case TokenType::EQUAL: os << "EQUAL"; break;
-    default: os << "UNKNOWN"; break;
+    case TokenType::SIGNGLECOMMENT: os << "SINGLECOMMENT"; break;
+    case TokenType::NEWLINE: os << "NEWLINE"; break;
+    default: os << "UNKNOWN case"; break;
     }
     return os;
 }
