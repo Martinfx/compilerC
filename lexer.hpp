@@ -10,14 +10,15 @@ std::vector<std::pair<TokenType, std::regex>> tokenTable = {
     {TokenType::KEYWORD, std::regex("^void\\b|int\\b|return\\b")},
     {TokenType::LITERAL, std::regex("^\\d+")},
     {TokenType::IDENTIFIER, std::regex("^[a-zA-Z_][a-zA-Z0-9_]*")},
-    {TokenType::OPERATOR, std::regex("^\\+|\\-|\\*|\\/|\\=")},
+    {TokenType::OPERATOR, std::regex("^\\+|\\-|\\*|\\/|\\=|\\<|\\>|\\!")},
     {TokenType::WHITESPACE, std::regex("^\\s+")},
     {TokenType::OPENPARENTHESIS, std::regex("^\\(")},
     {TokenType::CLOSEPARENTHESIS, std::regex("^\\)")},
     {TokenType::OPENBRACE, std::regex("^\\{")},
     {TokenType::CLOSEBRACE, std::regex("^\\}")},
     {TokenType::SEMICOLON, std::regex("^\\;")},
-    {TokenType::COMMA, std::regex("^,")}
+    {TokenType::COMMA, std::regex("^,")},
+    {TokenType::UNKNOWN, std::regex("^\\@|\\#")}
 };
 
 void trimWhitespace(std::string& input) {
@@ -43,7 +44,7 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
 
     while (!remainingInput.empty()) {
         trimWhitespace(remainingInput);
-        trimAt(remainingInput);
+        //trimAt(remainingInput);
 
         bool matched = false;
         for (const auto& [type, regex] : tokenTable) {
