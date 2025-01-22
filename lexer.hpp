@@ -11,7 +11,7 @@ std::vector<std::pair<TokenType, std::regex>> tokenTable = {
     {TokenType::LITERAL, std::regex("^\\d+")},
     {TokenType::IDENTIFIER, std::regex("^[a-zA-Z_][a-zA-Z0-9_]*")},
     {TokenType::OPERATOR, std::regex("^\\+|\\-|\\*|\\/|\\=|\\<|\\>|\\!")},
-    {TokenType::WHITESPACE, std::regex("^\\s+")},
+    {TokenType::WHITESPACE, std::regex("^\\s+|\\s+$")},
     {TokenType::OPENPARENTHESIS, std::regex("^\\(")},
     {TokenType::CLOSEPARENTHESIS, std::regex("^\\)")},
     {TokenType::OPENBRACE, std::regex("^\\{")},
@@ -24,16 +24,7 @@ std::vector<std::pair<TokenType, std::regex>> tokenTable = {
 };
 
 void trimWhitespace(std::string& input) {
-    input.erase(0, input.find_first_not_of(" \t\r"));
-}
-
-std::string removeComments(const std::string& input) {
-    static const std::regex singleLineComment("//.*");
-    static const std::regex multiLineComment("/\\*.*?\\*/");
-
-    std::string result = std::regex_replace(input, multiLineComment, "");
-    result = std::regex_replace(result, singleLineComment, "");
-    return result;
+    input.erase(0, input.find_first_not_of(" \t\r\v"));
 }
 
 std::vector<Token> tokenize(const std::string& input, const std::vector<std::pair<TokenType, std::regex>>& tokenTable) {
@@ -74,7 +65,7 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
             continue;
         }
 
-        bool matched = false;
+        //bool matched = false;
         for (const auto& [type, regex] : tokenTable) {
             std::smatch match;
             if (std::regex_search(remainingInput, match, regex) && match.position() == 0) {
@@ -101,15 +92,15 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
                 }
 
                 remainingInput = remainingInput.substr(match.length());
-                matched = true;
+                //matched = true;
                 break;
             }
         }
 
-        if (!matched) {
+        /*if (!matched) {
             std::cerr << "Warning: Unrecognized token at line " << lineCount << ": " << remainingInput << std::endl;
             break;
-        }
+        }*/
     }
 
     if (!bracketStack.empty()) {
@@ -118,7 +109,6 @@ std::vector<Token> tokenize(const std::string& input, const std::vector<std::pai
 
     return tokens;
 }
-
 
 std::ostream& operator<<(std::ostream& os, const NodeType& type) {
     switch (type) {

@@ -345,9 +345,9 @@ private:
             if (peek().type == TokenType::IDENTIFIER) {
 
                 if (tokens[position + 1].type == TokenType::OPENPARENTHESIS) {
-                    return parseFunctionDeclaration(); // Funkce
+                    return parseFunctionDeclaration();
                 } else {
-                    return parseVariableDeclaration(); // Proměnná
+                    return parseVariableDeclaration();
                 }
             } else {
                 throw std::runtime_error("Expected identifier after 'int'");
@@ -523,7 +523,7 @@ private:
             throw std::runtime_error("Expected function name after 'int'");
         }
 
-        auto name = parseIdentifier(); // name fuction
+        auto name = parseIdentifier();
 
 
         if (!match(TokenType::OPENPARENTHESIS)) {
@@ -532,7 +532,7 @@ private:
 
 
         std::vector<std::string> params;
-        while (peek().type == TokenType::IDENTIFIER || peek().type == TokenType::KEYWORD && peek().value == "void") {
+        while ((peek().type == TokenType::IDENTIFIER || peek().type == TokenType::KEYWORD) && (peek().value == "void")) {
             if (peek().value != "void") {
                 params.push_back(peek().value);
             }
@@ -688,76 +688,162 @@ public:
 
 class AstPrinter : public AstVisitor {
 public:
+    AstPrinter() : indentLevel(0) {}
+
     void visit(Expression* node) override {
-        std::cout << "Visiting Expression node\n";
+        printIndent();
+        std::cout << "Expression node\n";
     }
 
     void visit(Identifier* node) override {
-        std::cout << "Visiting Identifier node: " << node->name << "\n";
+        printIndent();
+        std::cout << "Identifier node: " << node->name << "\n";
     }
 
     void visit(Literal* node) override {
-        std::cout << "Visiting Literal node: " << node->getValue() << "\n";
+        printIndent();
+        std::cout << "Literal node: " << node->getValue() << "\n";
     }
 
     void visit(BinaryOperation* node) override {
-        std::cout << "Visiting BinaryOperation node with operator: " << node->op.value << "\n";
+        printIndent();
+        std::cout << "BinaryOperation node with operator: " << node->op.value << "\n";
+        indentLevel++;
         node->left->accept(this);
         node->right->accept(this);
+        indentLevel--;
     }
 
     void visit(ExpressionStatement* node) override {
-        std::cout << "Visiting ExpressionStatement node\n";
+        printIndent();
+        std::cout << "ExpressionStatement node\n";
+        indentLevel++;
         node->expression->accept(this);
+        indentLevel--;
     }
 
     void visit(BlockStatement* node) override {
-        std::cout << "Visiting BlockStatement node\n";
+        printIndent();
+        std::cout << "BlockStatement node\n";
+        indentLevel++;
         for (const auto& stmt : node->statements) {
             stmt->accept(this);
         }
+        indentLevel--;
     }
 
     void visit(IfStatement* node) override {
-        std::cout << "Visiting IfStatement node\n";
+        printIndent();
+        std::cout << "IfStatement node\n";
+        indentLevel++;
+        printIndent();
+        std::cout << "Condition:\n";
+        indentLevel++;
         node->condition->accept(this);
+        indentLevel--;
+        printIndent();
+        std::cout << "Then:\n";
+        indentLevel++;
         node->thenStatement->accept(this);
+        indentLevel--;
         if (node->elseStatement) {
+            printIndent();
+            std::cout << "Else:\n";
+            indentLevel++;
             node->elseStatement->accept(this);
+            indentLevel--;
         }
+        indentLevel--;
     }
 
     void visit(WhileStatement* node) override {
-        std::cout << "Visiting WhileStatement node\n";
+        printIndent();
+        std::cout << "WhileStatement node\n";
+        indentLevel++;
+        printIndent();
+        std::cout << "Condition:\n";
+        indentLevel++;
         node->condition->accept(this);
+        indentLevel--;
+        printIndent();
+        std::cout << "Body:\n";
+        indentLevel++;
         node->body->accept(this);
+        indentLevel--;
+        indentLevel--;
     }
 
     void visit(ForStatement* node) override {
-        std::cout << "Visiting ForStatement node\n";
+        printIndent();
+        std::cout << "ForStatement node\n";
+        indentLevel++;
+        printIndent();
+        std::cout << "Initialization:\n";
+        indentLevel++;
         node->init->accept(this);
+        indentLevel--;
+        printIndent();
+        std::cout << "Condition:\n";
+        indentLevel++;
         node->condition->accept(this);
+        indentLevel--;
+        printIndent();
+        std::cout << "Update:\n";
+        indentLevel++;
         node->update->accept(this);
+        indentLevel--;
+        printIndent();
+        std::cout << "Body:\n";
+        indentLevel++;
         node->body->accept(this);
+        indentLevel--;
+        indentLevel--;
     }
 
     void visit(FunctionDeclaration* node) override {
-        std::cout << "Visiting FunctionDeclaration node: " << node->name << "\n";
+        printIndent();
+        std::cout << "FunctionDeclaration node: " << node->name << "\n";
+        indentLevel++;
+        printIndent();
+        std::cout << "Parameters:\n";
+        indentLevel++;
         for (const auto& param : node->params) {
+            printIndent();
             std::cout << "Param: " << param << "\n";
         }
+        indentLevel--;
+        printIndent();
+        std::cout << "Body:\n";
+        indentLevel++;
         node->body->accept(this);
+        indentLevel--;
+        indentLevel--;
     }
 
     void visit(ReturnStatement* node) override {
-        std::cout << "Visiting ReturnStatement node\n";
+        printIndent();
+        std::cout << "ReturnStatement node\n";
+        indentLevel++;
         node->expression->accept(this);
+        indentLevel--;
     }
 
     void visit(VariableDeclaration* node) override {
-        std::cout << "Visiting VariableDeclaration node: " << node->name << "\n";
+        printIndent();
+        std::cout << "VariableDeclaration node: " << node->name << "\n";
         if (node->init) {
+            indentLevel++;
             node->init->accept(this);
+            indentLevel--;
+        }
+    }
+
+private:
+    int indentLevel;
+
+    void printIndent() const {
+        for (int i = 0; i < indentLevel; ++i) {
+            std::cout << "    ";
         }
     }
 };
