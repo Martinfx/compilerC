@@ -151,6 +151,36 @@ TEST(LexerTest, RecognizesComments2) {
     EXPECT_EQ(tokens[4].value, ";");
 }
 
+/// Test invalid input
+TEST(LexerTest, RecognizesInvalidInput) {
+    std::string input = "int main() { int x = 0;";
+    try {
+        auto tokens = tokenize(input, tokenTable);
+        FAIL();  // exception not thrown as expected
+    } catch (std::runtime_error& ex) {
+        EXPECT_STREQ("Unmatched opening brackets found. Ensure all brackets are closed. Line: 1", ex.what());
+    }
+}
+
+TEST(LexerTest, RecognizesInvalidInput2) {
+    std::string input = "int main()  int x = 0;}";
+    try {
+        auto tokens = tokenize(input, tokenTable);
+        FAIL();  // exception not thrown as expected
+    } catch (std::runtime_error& ex) {
+        EXPECT_STREQ("Unmatched closing bracket } at line 1", ex.what());
+    }
+}
+
+TEST(LexerTest, RecognizesInvalidInput3) {
+    std::string input = "int main) {  int x = 0;}";
+    try {
+        auto tokens = tokenize(input, tokenTable);
+        FAIL();  // exception not thrown as expected
+    } catch (std::runtime_error& ex) {
+        EXPECT_STREQ("Unmatched closing bracket ) at line 1", ex.what());
+    }
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
