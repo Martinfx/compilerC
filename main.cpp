@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     }*/
 
     //std::string sourceCode = readFile(filename);
-    std::string sourceCode = "int main() { int x = 42; return 0; } ";
+    std::string sourceCode = "int main() { int x = 42;} ";
     try {
         auto tokens = tokenize(sourceCode, tokenTable);
 
@@ -45,16 +45,8 @@ int main(int argc, char* argv[]) {
 
         std::cout << "Parsing completed successfully.\n";
 
-        // Start assembler output
-        std::cout << ".file   \"test.c\"" << std::endl;
-        std::cout << ".text" << std::endl;
-
         AssemblerGenerator generator;
         ast->accept(&generator);
-
-        // End assembler output
-        std::cout << ".ident  \"CompilerC: 0.1\"" << std::endl;
-        std::cout << ".section        .note.GNU-stack,\"\",@progbits" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << '\n';

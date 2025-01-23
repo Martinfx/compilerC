@@ -13,6 +13,7 @@ class Expression;
 class Identifier;
 class Literal;
 class BinaryOperation;
+class UnaryOperation;
 class ExpressionStatement;
 class BlockStatement;
 class IfStatement;
@@ -28,6 +29,7 @@ public:
     virtual void visit(Identifier* node) = 0;
     virtual void visit(Literal* node) = 0;
     virtual void visit(BinaryOperation* node) = 0;
+    virtual void visit(UnaryOperation* node) = 0;
     virtual void visit(ExpressionStatement* node) = 0;
     virtual void visit(BlockStatement* node) = 0;
     virtual void visit(IfStatement* node) = 0;
@@ -144,6 +146,21 @@ public:
     std::shared_ptr<AstNode> right;
     BinaryOperation(const Token &op, std::shared_ptr<AstNode> left, std::shared_ptr<AstNode> right) : op(op), left(left), right(right) {
         this->type = NodeType::BinaryExpr;
+    }
+
+    virtual void accept(AstVisitor* visitor) override {
+        visitor->visit(this);
+    }
+};
+
+class UnaryOperation : public Expression {
+public:
+    Token op;
+    std::shared_ptr<AstNode> operand;
+
+    UnaryOperation(const Token& op, std::shared_ptr<AstNode> operand)
+        : op(op), operand(operand) {
+        this->type = NodeType::UnaryExpr;
     }
 
     virtual void accept(AstVisitor* visitor) override {
@@ -326,15 +343,16 @@ private:
         }
     }
 
-    bool match(TokenType type)
-    {
-        if (!eof() && peek().type == type)
-        {
+    bool match(TokenType type) {
+        if (!eof() && peek().type == type) {
+            //std::cout << "Matched token: " << peek().value << " at position " << position << std::endl;
             advance();
             return true;
         }
+        //std::cout << "Token did not match: " << peek().value << " at position " << position << std::endl;
         return false;
     }
+
 
     std::shared_ptr<AstNode> parseStatement() {
         std::shared_ptr<AstNode> statement;
@@ -384,29 +402,30 @@ private:
         return left;
     }
 
-    std::shared_ptr<AstNode> parsePrimary()
-    {
-        if (peek().type == TokenType::IDENTIFIER)
-        {
+    std::shared_ptr<AstNode> parsePrimary() {
+        if (peek().type == TokenType::OPERATOR && (peek().value == "-" || peek().value == "~" || peek().value == "!")) {
+            Token op = peek();
+            advance();
+            std::shared_ptr<AstNode> operand = parsePrimary();
+            return std::make_shared<UnaryOperation>(op, operand);
+        }
+
+        if (peek().type == TokenType::IDENTIFIER) {
             return parseIdentifier();
-        }
-        else if (peek().type == TokenType::LITERAL)
-        {
+        } else if (peek().type == TokenType::LITERAL) {
             return parseLiteral();
+        } else if(peek().type == TokenType::KEYWORD && (peek().value == "if")) {
+            return parseIfStatement();
+        } else if (match(TokenType::OPENPARENTHESIS)) {
+                auto expr = parseExpression();
+                if (!match(TokenType::CLOSEPARENTHESIS)) {
+                    std::cerr << "Error: unmatched parenthesis at position " << position << std::endl;
+                    exit(1);
+                }
+                return expr;
         }
-        else if (match(TokenType::OPENPARENTHESIS) && peek().value == "(")
-        {
-            std::shared_ptr<AstNode> expr = parseExpression();
-            if (!match(TokenType::CLOSEPARENTHESIS) || peek().value != ")")
-            {
-                // Error: unmatched parenthesis
-                std::cerr << "Error: unmatched parenthesis" << std::endl;
-                exit(1);
-            }
-            return expr;
-        }
-        // Error: unexpected token
-        std::cerr << "Error: unexpected token in ast " << peek().value << std::endl;
+
+        std::cerr << "Error: unexpected token in ast: " << peek().value << std::endl;
         exit(1);
     }
 
@@ -438,32 +457,33 @@ private:
         return std::make_shared<ExpressionStatement>(expr);
     }
 
-    std::shared_ptr<AstNode> parseIfStatement()
-    {
-        if (!match(TokenType::OPENPARENTHESIS) || peek().value != "(")
-        {
-            // Error: expected '(' after 'if'
-            std::cerr << "Error: expected '(' after 'if'" << std::endl;
-            exit(1);
+    std::shared_ptr<AstNode> parseIfStatement() {
+        if (!match(TokenType::KEYWORD) || peek().value != "if") {
+            throw std::runtime_error("Expected 'if' keyword");
         }
         advance();
-        std::shared_ptr<AstNode> condition = parseExpression();
-        if (!match(TokenType::CLOSEPARENTHESIS) || peek().value != ")")
-        {
-            // Error: expected ')' after if condition
-            std::cerr << "Error: expected ')' after if condition" << std::endl;
-            exit(1);
+
+        if (!match(TokenType::OPENPARENTHESIS)) {
+            throw std::runtime_error("Expected '(' after 'if'");
         }
-        advance();
-        std::shared_ptr<AstNode> thenStatement = parseStatement();
-        std::shared_ptr<AstNode> elseStatement;
-        if (match(TokenType::KEYWORD) && peek().value == "else")
-        {
+
+        auto condition = parseExpression();
+
+        if (!match(TokenType::CLOSEPARENTHESIS)) {
+            throw std::runtime_error("Expected ')' after if condition");
+        }
+
+        auto thenStatement = parseStatement();
+
+        std::shared_ptr<AstNode> elseStatement = nullptr;
+        if (peek().type == TokenType::KEYWORD && peek().value == "else") {
             advance();
             elseStatement = parseStatement();
         }
+
         return std::make_shared<IfStatement>(condition, thenStatement, elseStatement);
     }
+
 
     std::shared_ptr<AstNode> parseWhileStatement()
     {
@@ -619,6 +639,23 @@ public:
         }
     }
 
+    void visit(UnaryOperation* node) override {
+        node->operand->accept(this);
+
+        if (node->op.value == "-") {
+            std::cout << "        neg     %eax" << std::endl;
+        } else if (node->op.value == "~") {
+            std::cout << "        not     %eax" << std::endl;
+        } else if (node->op.value == "!") {
+            std::cout << "        cmp     %eax, 0" << std::endl;
+            std::cout << "        mov     $0, %eax" << std::endl;
+            std::cout << "        sete    %al" << std::endl;
+        } else {
+            std::cerr << "Error: Unsupported unary operator: " <<  node->op.value << std::endl;
+            exit(1);
+        }
+    }
+
     void visit(ExpressionStatement* node) override {
         node->expression->accept(this);
     }
@@ -665,12 +702,16 @@ public:
     }
 
     void visit(FunctionDeclaration* node) override {
+        std::cout << ".file   \"test.c\"" << std::endl;
+        std::cout << ".text" << std::endl;
         std::cout << "        .globl  " << node->name << std::endl;
         std::cout << "        .type   " << node->name << ", @function" << std::endl;
         std::cout << node->name << ":" << std::endl;
         node->body->accept(this);
         std::cout << "        ret" << std::endl;
         std::cout << "        .size   " << node->name << ", .-" << node->name << std::endl;
+        std::cout << ".ident  \"CompilerC: 0.1\"" << std::endl;
+        std::cout << ".section        .note.GNU-stack,\"\",@progbits" << std::endl;
     }
 
     void visit(ReturnStatement* node) override {
@@ -711,6 +752,14 @@ public:
         indentLevel++;
         node->left->accept(this);
         node->right->accept(this);
+        indentLevel--;
+    }
+
+    void visit(UnaryOperation* node) override {
+        printIndent();
+        std::cout << "Unary node with operator: " << node->op.value << "\n";
+        indentLevel++;
+        node->operand->accept(this);
         indentLevel--;
     }
 

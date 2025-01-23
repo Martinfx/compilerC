@@ -33,12 +33,16 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForSimpleFunction) {
     std::cout.rdbuf(oldCoutBuffer);
 
     std::string expectedOutput =
+        ".file   \"test.c\""
+        ".text             "
         "        .globl  main\n"
         "        .type   main, @function\n"
         "main:\n"
         "        mov     $0, %eax\n"
         "        ret\n"
-        "        .size   main, .-main\n";
+        "        .size   main, .-main\n"
+        ".ident  \"CompilerC: 0.1\""
+        ".section        .note.GNU-stack,\"\",@progbits";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
@@ -68,12 +72,16 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForSimpleFunction2) {
     std::cout.rdbuf(oldCoutBuffer);
 
     std::string expectedOutput =
+        ".file   \"test.c\""
+        ".text             "
         "        .globl  main\n"
         "        .type   main, @function\n"
         "main:\n"
         "        mov     $0, %eax\n"
         "        ret\n"
-        "        .size   main, .-main\n";
+        "        .size   main, .-main\n"
+        ".ident  \"CompilerC: 0.1\""
+        ".section        .note.GNU-stack,\"\",@progbits";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }
@@ -102,12 +110,16 @@ TEST(AssemblerTest, GeneratesCorrectAssemblerForSimpleFunction3) {
     std::cout.rdbuf(oldCoutBuffer);
 
     std::string expectedOutput =
+        ".file   \"test.c\""
+        ".text             "
         "        .globl  main\n"
         "        .type   main, @function\n"
         "main:\n"
         "        mov     $0, %eax\n"
         "        ret\n"
-        "        .size   main, .-main\n";
+        "        .size   main, .-main\n"
+        ".ident  \"CompilerC: 0.1\""
+        ".section        .note.GNU-stack,\"\",@progbits";
 
     EXPECT_EQ(remove_whitespace(output.str()), remove_whitespace(expectedOutput));
 }

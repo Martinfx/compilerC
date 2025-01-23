@@ -7,10 +7,10 @@
 #include "compiler.hpp"
 
 std::vector<std::pair<TokenType, std::regex>> tokenTable = {
-    {TokenType::KEYWORD, std::regex("^void\\b|int\\b|return\\b")},
+    {TokenType::KEYWORD, std::regex("^void\\b|int\\b|return\\b|if\\b|else\\b|while\\b|break\\b|continue\\b")},
     {TokenType::LITERAL, std::regex("^\\d+")},
     {TokenType::IDENTIFIER, std::regex("^[a-zA-Z_][a-zA-Z0-9_]*")},
-    {TokenType::OPERATOR, std::regex("^\\+|\\-|\\*|\\/|\\=|\\<|\\>|\\!")},
+    {TokenType::OPERATOR, std::regex("^\\+|\\-|\\*|\\/|\\%|\\=|\\==|\\<|\\>|\\!|\\~|\\&|\\^|\\<<|\\>>")},
     {TokenType::WHITESPACE, std::regex("^\\s+|\\s+$")},
     {TokenType::OPENPARENTHESIS, std::regex("^\\(")},
     {TokenType::CLOSEPARENTHESIS, std::regex("^\\)")},
