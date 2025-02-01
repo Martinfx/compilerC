@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     }*/
 
     //std::string sourceCode = readFile(filename);
-    std::string sourceCode = "int main() { int x = 42;} ";
+    std::string sourceCode = "int main() { int x = 0;if(x == 0){ return 1;} else { return 0;} }";
     try {
         auto tokens = tokenize(sourceCode, tokenTable);
 

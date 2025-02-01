@@ -112,7 +112,7 @@ TEST(ParserTest, ParsesSimpleFunction) {
     EXPECT_EQ(literal->value, "0");
 }
 
-TEST(ParserTest, ParsesVariableDeclaration) {
+TEST(ParserTest, ParsesVariableDeclarationAndReturn) {
     // Token stream representing the code:
     // int main() {
     //     int x = 42;
@@ -128,6 +128,9 @@ TEST(ParserTest, ParsesVariableDeclaration) {
         {TokenType::IDENTIFIER, "x"},
         {TokenType::OPERATOR, "="},
         {TokenType::LITERAL, "42"},
+        {TokenType::SEMICOLON, ";"},
+        {TokenType::KEYWORD, "return"},
+        {TokenType::IDENTIFIER, "x"},
         {TokenType::SEMICOLON, ";"},
         {TokenType::CLOSEBRACE, "}"}
     };
@@ -152,20 +155,33 @@ TEST(ParserTest, ParsesVariableDeclaration) {
     // Check that the function body is a BlockStatement
     auto funcBody = std::dynamic_pointer_cast<BlockStatement>(funcDecl->body);
     ASSERT_NE(funcBody, nullptr);
-    ASSERT_EQ(funcBody->statements.size(), 2);
+    ASSERT_EQ(funcBody->statements.size(), 3);
 
-    // Verify that the body contains a VariableDeclaration
+    // Verify that the first statement is a VariableDeclaration
     auto varDecl = std::dynamic_pointer_cast<VariableDeclaration>(funcBody->statements[0]);
     ASSERT_NE(varDecl, nullptr);
     EXPECT_EQ(varDecl->name, "x");
 
-    // Verify the initializer is a Literal
-    auto literal = std::dynamic_pointer_cast<Literal>(varDecl->init);
-    EXPECT_EQ(literal->type, NodeType::Literal);
+    // Verify the initializer of the variable declaration
+    auto expression = std::dynamic_pointer_cast<ExpressionStatement>(funcBody->statements[1]);
+    ASSERT_NE(expression, nullptr);
+
+    auto literal = std::dynamic_pointer_cast<Literal>(expression->expression);
+    ASSERT_EQ(literal->type, NodeType::Literal);
     ASSERT_NE(literal, nullptr);
     EXPECT_EQ(literal->value, "42");
-}
 
+    // Verify that the second statement is a ReturnStatement
+    auto returnStmt = std::dynamic_pointer_cast<ReturnStatement>(funcBody->statements[2]);
+    ASSERT_EQ(returnStmt->type, NodeType::ReturnStatement);
+    ASSERT_NE(returnStmt, nullptr);
+
+    // Verify the return expression is an Identifier
+    auto returnExpr = std::dynamic_pointer_cast<Identifier>(returnStmt->expression);
+    ASSERT_EQ(returnExpr->type, NodeType::Identifier);
+    ASSERT_NE(returnExpr, nullptr);
+    EXPECT_EQ(returnExpr->name, "x");
+}
 
 TEST(ParserTest, ParsesIfStatement) {
     // Token stream representing the code:

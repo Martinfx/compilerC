@@ -14,6 +14,7 @@ class Identifier;
 class Literal;
 class BinaryOperation;
 class UnaryOperation;
+class AssignmentOperation;
 class ExpressionStatement;
 class BlockStatement;
 class IfStatement;
@@ -31,6 +32,7 @@ public:
     virtual void visit(BinaryOperation* node) = 0;
     virtual void visit(UnaryOperation* node) = 0;
     virtual void visit(ExpressionStatement* node) = 0;
+    virtual void visit(AssignmentOperation* node) = 0;
     virtual void visit(BlockStatement* node) = 0;
     virtual void visit(IfStatement* node) = 0;
     virtual void visit(WhileStatement* node) = 0;
@@ -161,6 +163,21 @@ public:
     UnaryOperation(const Token& op, std::shared_ptr<AstNode> operand)
         : op(op), operand(operand) {
         this->type = NodeType::UnaryExpr;
+    }
+
+    virtual void accept(AstVisitor* visitor) override {
+        visitor->visit(this);
+    }
+};
+
+class AssignmentOperation : public Expression {
+public:
+    std::shared_ptr<AstNode> left;
+    std::shared_ptr<AstNode> right;
+
+    AssignmentOperation(std::shared_ptr<AstNode> left, std::shared_ptr<AstNode> right)
+        : left(left), right(right) {
+        this->type = NodeType::BinaryExpr; // You can define a new NodeType like NodeType::Assignment if needed.
     }
 
     virtual void accept(AstVisitor* visitor) override {
@@ -387,15 +404,26 @@ private:
         return statement;
     }
 
-    std::shared_ptr<AstNode> parseExpression()
-    {
-        std::shared_ptr<AstNode> left = parsePrimary();
+    std::shared_ptr<AstNode> parseExpression() {
+        auto left = parsePrimary();
 
-        while (peek().type == TokenType::OPERATOR)
-        {
+        while (!eof() && peek().type == TokenType::OPERATOR) {
             Token op = peek();
+
+            // Fix for == operator
+            if (op.value == "=" && position + 1 < tokens.size() &&
+                tokens[position + 1].type == TokenType::OPERATOR &&
+                tokens[position + 1].value == "=") {
+                advance(); // Consume first "="
+                advance(); // Consume second "="
+                auto right = parseExpression();
+                Token equalOp = {TokenType::OPERATOR, "=="}; // Create a correct "==" token
+                return std::make_shared<BinaryOperation>(equalOp, left, right);
+            }
+
+            // Other operators
             advance();
-            std::shared_ptr<AstNode> right = parsePrimary();
+            auto right = parsePrimary();
             left = std::make_shared<BinaryOperation>(op, left, right);
         }
 
@@ -403,6 +431,7 @@ private:
     }
 
     std::shared_ptr<AstNode> parsePrimary() {
+        // Handle unary operators
         if (peek().type == TokenType::OPERATOR && (peek().value == "-" || peek().value == "~" || peek().value == "!")) {
             Token op = peek();
             advance();
@@ -410,21 +439,56 @@ private:
             return std::make_shared<UnaryOperation>(op, operand);
         }
 
+        // Handle identifiers
         if (peek().type == TokenType::IDENTIFIER) {
-            return parseIdentifier();
-        } else if (peek().type == TokenType::LITERAL) {
-            return parseLiteral();
-        } else if(peek().type == TokenType::KEYWORD && (peek().value == "if")) {
-            return parseIfStatement();
-        } else if (match(TokenType::OPENPARENTHESIS)) {
-                auto expr = parseExpression();
-                if (!match(TokenType::CLOSEPARENTHESIS)) {
-                    std::cerr << "Error: unmatched parenthesis at position " << position << std::endl;
-                    exit(1);
-                }
-                return expr;
+            auto identifier = parseIdentifier();
+
+            // Check if the next token is '=' for assignment
+            if (peek().type == TokenType::OPERATOR && peek().value == "=") {
+                Token op = peek();
+                advance(); // Consume '='
+                auto right = parseExpression();
+                return std::make_shared<AssignmentOperation>(identifier, right);
+            }
+
+            return identifier;
         }
 
+        // Handle literals
+        if (peek().type == TokenType::LITERAL) {
+            return parseLiteral();
+        }
+
+        // Handle "if" statements
+        if (peek().type == TokenType::KEYWORD && peek().value == "if") {
+            return parseIfStatement();
+        }
+
+        // Handle parenthesized expressions
+        if (match(TokenType::OPENPARENTHESIS)) {
+            auto expr = parseExpression();
+
+            if (!match(TokenType::CLOSEPARENTHESIS)) {
+                std::cerr << "Error: unmatched parenthesis at position " << position << std::endl;
+                exit(1);
+            }
+            return expr;
+        }
+
+        // Handle comparison operator "==" split into two "=" tokens
+        if (peek().type == TokenType::OPERATOR && peek().value == "=") {
+            // Look ahead to see if the next token is also "="
+            if (position + 1 < tokens.size() && tokens[position + 1].type == TokenType::OPERATOR && tokens[position + 1].value == "=") {
+                advance(); // Consume the first "="
+                advance(); // Consume the second "="
+                auto left = parsePrimary();  // Parse the left operand
+                auto right = parseExpression(); // Parse the right operand
+                Token equalOp = {TokenType::OPERATOR, "=="}; // Create a combined "==" token
+                return std::make_shared<BinaryOperation>(equalOp, left, right);
+            }
+        }
+
+        // Error for unexpected tokens
         std::cerr << "Error: unexpected token in ast: " << peek().value << std::endl;
         exit(1);
     }
@@ -442,7 +506,6 @@ private:
         }
 
         auto literal = std::make_shared<Literal>(peek().value);
-        assert(literal);
         advance();
         return literal;
     }
@@ -459,6 +522,7 @@ private:
 
     std::shared_ptr<AstNode> parseIfStatement() {
         if (!match(TokenType::KEYWORD) || peek().value != "if") {
+            std::cerr << "Error: Expected 'if' keyword, but found " << peek().value << " at position " << position << std::endl;
             throw std::runtime_error("Expected 'if' keyword");
         }
         advance();
@@ -483,7 +547,6 @@ private:
 
         return std::make_shared<IfStatement>(condition, thenStatement, elseStatement);
     }
-
 
     std::shared_ptr<AstNode> parseWhileStatement()
     {
@@ -656,6 +719,20 @@ public:
         }
     }
 
+    void visit(AssignmentOperation* node) override {
+        // Generate code for the right-hand side
+        node->right->accept(this);
+
+        // Assume the left-hand side is always an Identifier for simplicity
+        auto identifier = std::dynamic_pointer_cast<Identifier>(node->left);
+        if (identifier) {
+            std::cout << "        mov     [" << identifier->name << "], %eax" << std::endl;
+        } else {
+            std::cerr << "Error: Invalid assignment target" << std::endl;
+            exit(1);
+        }
+    }
+
     void visit(ExpressionStatement* node) override {
         node->expression->accept(this);
     }
@@ -760,6 +837,16 @@ public:
         std::cout << "Unary node with operator: " << node->op.value << "\n";
         indentLevel++;
         node->operand->accept(this);
+        indentLevel--;
+    }
+
+    void visit(AssignmentOperation* node) override {
+        printIndent();
+        auto identifier = std::dynamic_pointer_cast<Identifier>(node->left);
+        std::cout << "Assignment node with operator: " << identifier->name << "\n";
+        indentLevel++;
+        node->left->accept(this);
+        node->right->accept(this);
         indentLevel--;
     }
 

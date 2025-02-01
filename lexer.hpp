@@ -20,7 +20,7 @@ std::vector<std::pair<TokenType, std::regex>> tokenTable = {
     {TokenType::COMMA, std::regex("^,")},
     {TokenType::UNKNOWN, std::regex("^\\@|\\#")},
     {TokenType::SIGNGLECOMMENT, std::regex("^//[^\n]*")},
-    {TokenType::NEWLINE, std::regex("^\n")}
+    {TokenType::NEWLINE, std::regex("^\n|\r")}
 };
 
 void trimWhitespace(std::string& input) {
